@@ -1,0 +1,43 @@
+name: Test clean code produces empty report
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare pip environment
+        run: |
+          echo "PIP_BREAK_SYSTEM_PACKAGES=1" >> "$GITHUB_ENV"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          if ! command -v pip >/dev/null 2>&1; then
+            if command -v pip3 >/dev/null 2>&1; then
+              ln -sf "$(command -v pip3)" /usr/local/bin/pip
+            else
+              (apt-get update && apt-get install -y python3-pip) || sudo apt-get install -y python3-pip
+            fi
+          fi
+          rm -f results.sarif
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          path: tests/fixtures/clean
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Assert no findings
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ] && [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: unexpected outcome"; exit 1
+          fi
+          if [ ! -s results.sarif ]; then
+            echo "FAIL: results.sarif not produced"; exit 1
+          fi
+          COUNT="$(python3 tests/fixtures/sarif_rules.py results.sarif count)"
+          echo "count: $COUNT"
+          if [ "$COUNT" != "0" ]; then
+            echo "FAIL: expected 0 findings"; exit 1
+          fi
+          echo "PASS"

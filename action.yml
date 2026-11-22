@@ -137,7 +137,7 @@ runs:
         path: results.sarif
 
     - name: Upload SARIF file
-      uses: chainguard-actions/github-codeql-action/upload-sarif@35b946fb8a7fdb756417ab8e634b01a23ea51c8c # v2
+      uses: chainguard-actions/github-codeql-action/upload-sarif@70aa42b697822e442e8a5d5917fb5316ac9740f7 # v2
       with:
         sarif_file: results.sarif
 
